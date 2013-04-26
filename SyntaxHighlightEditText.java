@@ -9,11 +9,17 @@ import android.text.style.ForegroundColorSpan;
 import android.util.AttributeSet;
 import android.widget.EditText;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class SyntaxHighlightEditText extends EditText {
     private TextWatcher myWatcher = null;
-    private ForegroundColorSpan fcs = new ForegroundColorSpan(Color.rgb(255, 0, 0));
+    private ForegroundColorSpan red = new ForegroundColorSpan(Color.rgb(255, 0, 0));
 
     final SyntaxHighlightEditText that = this;
+    private List<String> reservedWords;
 
     private void createWatcherForEditor() {
         myWatcher = new TextWatcher() {
@@ -30,13 +36,8 @@ public class SyntaxHighlightEditText extends EditText {
             @Override
             public void afterTextChanged(Editable s) {
                 String actualCode = that.getText().toString();
-                int codeLength = actualCode.length();
-                if (codeLength > 4) {
-                    codeLength = 4;
-                }
 
-                s.setSpan(fcs, 0, codeLength, Spanned.SPAN_INCLUSIVE_INCLUSIVE);
-
+                highlight(s, actualCode);
             }
         };
     }
@@ -59,5 +60,26 @@ public class SyntaxHighlightEditText extends EditText {
     private void init() {
         this.createWatcherForEditor();
         this.addTextChangedListener(this.myWatcher);
+        this.reservedWords = Arrays.asList("int", "bool", "float", "string", "function", "class", "new", "this", "private", "public", "protected");
+    }
+
+    private void highlight(Editable s, String text) {
+        String regex = "(";
+        int counter = 0;
+        for(String word : reservedWords) {
+            counter += 1;
+            regex += "\\b" + word;
+            if(counter < reservedWords.size()) {
+                regex += "|";
+            }
+        }
+        regex += "\\s)";
+
+        Pattern p = Pattern.compile("\\b" + regex + "\\s");
+        Matcher m = p.matcher(text);
+
+        while(m.find()) {
+            s.setSpan(new ForegroundColorSpan(Color.rgb(255, 0, 0)), m.start(), m.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
     }
 }
